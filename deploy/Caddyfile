@@ -1,0 +1,11 @@
+music.rifqiurahman.com {
+	# Automatic HTTPS via Let's Encrypt is handled by Caddy.
+	encode gzip
+
+	reverse_proxy 127.0.0.1:8080
+
+	# Uploads are capped at 50 MB by the backend; allow headroom here.
+	request_body {
+		max_size 60MB
+	}
+}

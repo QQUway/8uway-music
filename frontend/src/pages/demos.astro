@@ -1,0 +1,183 @@
+---
+import Base from "../layouts/Base.astro";
+---
+
+<Base
+  active="demos"
+  title="Demo tapes — 8Uway"
+  description="Unreleased home demos by 8Uway. Raw takes, work in progress."
+>
+  <section class="hero" style="padding-bottom: 1.2rem;">
+    <div class="container">
+      <span class="eyebrow">Demo tapes</span>
+      <h1 style="font-size: clamp(2.2rem, 5vw, 3.4rem); margin-bottom: 0.8rem;">
+        Rough cuts, warm takes.
+      </h1>
+      <p class="lede">
+        Unpolished home recordings — the stuff between the releases. Headphones
+        recommended, mastering optional.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" style="padding-top: 1rem;">
+    <div class="container">
+      <div id="demo-list">
+        <p class="empty-note">Loading demos…</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="player-bar" id="player-bar" aria-label="Audio player">
+    <div class="container inner">
+      <button class="pb-toggle" id="pb-toggle" aria-label="Play or pause">▶</button>
+      <span class="pb-title" id="pb-title">—</span>
+      <span class="pb-time" id="pb-cur">0:00</span>
+      <input type="range" id="pb-seek" min="0" max="1000" value="0" aria-label="Seek" />
+      <span class="pb-time" id="pb-dur">0:00</span>
+    </div>
+  </div>
+</Base>
+
+<script>
+  interface Demo {
+    slug: string;
+    title: string;
+    description: string | null;
+    filename: string;
+    duration: number | null;
+  }
+
+  const list = document.getElementById("demo-list")!;
+  const bar = document.getElementById("player-bar")!;
+  const toggle = document.getElementById("pb-toggle")!;
+  const pbTitle = document.getElementById("pb-title")!;
+  const pbCur = document.getElementById("pb-cur")!;
+  const pbDur = document.getElementById("pb-dur")!;
+  const seek = document.getElementById("pb-seek") as HTMLInputElement;
+  const audio = new Audio();
+  let currentSlug: string | null = null;
+  let seeking = false;
+
+  const fmt = (s: number) => {
+    if (!isFinite(s)) return "0:00";
+    const m = Math.floor(s / 60);
+    const r = Math.floor(s % 60);
+    return `${m}:${r.toString().padStart(2, "0")}`;
+  };
+
+  function setPlayingUI(slug: string | null, playing: boolean) {
+    currentSlug = slug;
+    document.querySelectorAll<HTMLElement>(".demo-item").forEach((el) => {
+      const on = el.dataset.slug === slug;
+      el.classList.toggle("playing", on);
+      const dot = el.querySelector(".play-dot");
+      if (dot) dot.textContent = on && playing ? "❚❚" : "▶";
+    });
+    toggle.textContent = playing ? "❚❚" : "▶";
+  }
+
+  function playDemo(d: Demo) {
+    if (currentSlug === d.slug) {
+      if (audio.paused) {
+        audio.play();
+      } else {
+        audio.pause();
+      }
+      return;
+    }
+    audio.src = `/audio/${d.filename}`;
+    pbTitle.textContent = d.title;
+    bar.classList.add("visible");
+    audio
+      .play()
+      .then(() => setPlayingUI(d.slug, true))
+      .catch(() => setPlayingUI(d.slug, false));
+  }
+
+  toggle.addEventListener("click", () => {
+    if (!audio.src) return;
+    if (audio.paused) audio.play();
+    else audio.pause();
+  });
+
+  audio.addEventListener("play", () => setPlayingUI(currentSlug, true));
+  audio.addEventListener("pause", () => setPlayingUI(currentSlug, false));
+  audio.addEventListener("ended", () => setPlayingUI(currentSlug, false));
+  audio.addEventListener("timeupdate", () => {
+    if (seeking) return;
+    pbCur.textContent = fmt(audio.currentTime);
+    if (audio.duration) {
+      seek.value = String((audio.currentTime / audio.duration) * 1000);
+    }
+  });
+  audio.addEventListener("loadedmetadata", () => {
+    pbDur.textContent = fmt(audio.duration);
+  });
+
+  seek.addEventListener("input", () => {
+    seeking = true;
+    if (audio.duration) {
+      pbCur.textContent = fmt((Number(seek.value) / 1000) * audio.duration);
+    }
+  });
+  seek.addEventListener("change", () => {
+    if (audio.duration) {
+      audio.currentTime = (Number(seek.value) / 1000) * audio.duration;
+    }
+    seeking = false;
+  });
+
+  async function loadDemos() {
+    try {
+      const res = await fetch("/api/demos");
+      if (!res.ok) throw new Error("bad status");
+      const demos: Demo[] = await res.json();
+      if (!demos.length) {
+        list.innerHTML =
+          '<p class="empty-note">No demos up yet — check back soon.</p>';
+        return;
+      }
+      list.innerHTML = `<div class="demo-list">${demos
+        .map(
+          (d) => `
+          <div class="demo-item" data-slug="${d.slug}" id="${d.slug}" role="button" tabindex="0">
+            <span class="play-dot">▶</span>
+            <span class="info">
+              <h3>${d.title}</h3>
+              <p>${d.description ?? "Home demo"}</p>
+            </span>
+            <span class="dur">${d.duration ? fmt(d.duration) : ""}</span>
+          </div>`,
+        )
+        .join("")}</div>`;
+
+      list.querySelectorAll<HTMLElement>(".demo-item").forEach((el) => {
+        const d = demos.find((x) => x.slug === el.dataset.slug)!;
+        const go = () => playDemo(d);
+        el.addEventListener("click", go);
+        el.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            go();
+          }
+        });
+      });
+
+      const hash = decodeURIComponent(location.hash.slice(1));
+      if (hash) {
+        const target = document.getElementById(hash);
+        if (target) {
+          target.scrollIntoView({ behavior: "smooth", block: "center" });
+          const d = demos.find((x) => x.slug === hash);
+          if (d) playDemo(d);
+        }
+      }
+    } catch {
+      list.innerHTML =
+        '<p class="empty-note">Demos are taking a nap right now. Try again later.</p>';
+    }
+  }
+
+  loadDemos();
+</script>

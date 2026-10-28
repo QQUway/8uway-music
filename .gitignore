@@ -1,0 +1,16 @@
+# frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.astro/
+
+# server
+server/target/
+server/data/
+
+# env / secrets
+.env
+.env.*
+
+# os / editor
+.DS_Store
+*.log

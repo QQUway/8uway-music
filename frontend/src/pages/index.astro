@@ -1,0 +1,167 @@
+---
+import Base from "../layouts/Base.astro";
+
+// Latest TikTok covers (first 3) — keep in sync with covers.astro.
+const latestCovers = [
+  "7693608437308984594",
+  "7688747751244336404",
+  "7661250866275486996",
+];
+---
+
+<Base active="home" title="8Uway — Music" description="Songs, covers and demos by 8Uway (Rifqi Habib Ur Rahman).">
+  <section class="hero">
+    <div class="container hero-grid">
+      <div>
+        <span class="eyebrow">Singer · Songwriter · Guitarist</span>
+        <h1>Hi, I'm <em>8Uway</em>.</h1>
+        <p class="lede">
+          Music of Rifqi Habib Ur Rahman — original songs, covers and home-studio
+          demos. Recorded slowly, released when it feels right.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#songs">Listen to my songs</a>
+          <a class="btn btn-ghost" href="/demos/">Demo tapes</a>
+        </div>
+      </div>
+      <div class="hero-photo">
+        <img src="/images/hero.webp" alt="8Uway playing electric guitar" width="880" height="1174" />
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="songs">
+    <div class="container">
+      <div class="section-head">
+        <h2>Songs</h2>
+      </div>
+      <div class="song-grid">
+        <article class="song-card">
+          <div class="art"><img src="/images/live-1.jpeg" alt="8Uway performing live" /></div>
+          <h3>limbo</h3>
+          <p class="meta">8Uway · Written by Rifqi Habib Ur Rahman · Released 18 June 2026</p>
+          <p>My first official release. Out on all platforms via CDBaby.</p>
+          <div class="embed-frame">
+            <iframe
+              src="https://www.youtube-nocookie.com/embed/eDYuTYmsGK4"
+              title="limbo — 8Uway"
+              loading="lazy"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowfullscreen
+              style="aspect-ratio: 16 / 9; height: auto;"
+            ></iframe>
+          </div>
+          <div class="chip-row">
+            <a class="chip chip-pink" href="https://www.youtube.com/watch?v=eDYuTYmsGK4" target="_blank" rel="noopener">YouTube</a>
+            <a class="chip chip-purple" href="https://music.youtube.com/playlist?list=MPREb_GOTtbXZ5dek" target="_blank" rel="noopener">YouTube Music</a>
+          </div>
+        </article>
+
+        <article class="song-card">
+          <div class="art"><img src="/images/live-band.jpeg" alt="Northanger performing live" /></div>
+          <h3>Melancholic Ensemble</h3>
+          <p class="meta">Northanger · I play guitar in the band</p>
+          <p>
+            A track with my band <strong>Northanger</strong>. Soft, slow, and a
+            little bit sad — the way ensembles should be.
+          </p>
+          <div class="embed-frame">
+            <iframe
+              src="https://open.spotify.com/embed/track/41hAlNKWTKYmMLanSclxJg?utm_source=generator&theme=0"
+              title="Melancholic Ensemble — Northanger"
+              loading="lazy"
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              style="height: 152px;"
+            ></iframe>
+          </div>
+          <div class="chip-row">
+            <a class="chip chip-green" href="https://open.spotify.com/track/41hAlNKWTKYmMLanSclxJg" target="_blank" rel="noopener">Spotify</a>
+            <a class="chip chip-purple" href="https://www.instagram.com/nrthanger/" target="_blank" rel="noopener">@nrthanger</a>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container section-tinted" style="padding: clamp(2rem, 5vw, 3.2rem);">
+      <div class="section-head">
+        <h2>Covers</h2>
+        <a class="more" href="/covers/">All covers →</a>
+      </div>
+      <div class="photo-strip">
+        <img src="/images/hero.webp" alt="Live at a café stage" loading="lazy" />
+        <img src="/images/live-2.jpeg" alt="On stage in magenta light" loading="lazy" />
+        <img src="/images/live-band.jpeg" alt="Full band performance" loading="lazy" />
+      </div>
+      <p style="margin-top: 1.4rem; color: var(--ink-soft); font-size: 0.95rem;">
+        Cover songs and stage moments live on TikTok —
+        <a href="https://www.tiktok.com/@kiki.arloji" target="_blank" rel="noopener"><strong>@kiki.arloji</strong></a>.
+      </p>
+      <div class="tiktok-grid tiktok-grid-home">
+        {latestCovers.map((id) => (
+          <div class="tiktok-card">
+            <iframe
+              src={`https://www.tiktok.com/player/v1/${id}?music_info=1&description=1&rel=0&autoplay=0`}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; picture-in-picture; web-share"
+              allowfullscreen
+              loading="lazy"
+              title="TikTok cover by 8Uway"
+            ></iframe>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="demos">
+    <div class="container">
+      <div class="section-head">
+        <h2>Demo tapes</h2>
+        <a class="more" href="/demos/">All demos →</a>
+      </div>
+      <div id="home-demos">
+        <p class="empty-note">Loading demos…</p>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<script>
+  async function loadHomeDemos() {
+    const target = document.getElementById("home-demos");
+    if (!target) return;
+    try {
+      const res = await fetch("/api/demos");
+      if (!res.ok) throw new Error("bad status");
+      const demos = (await res.json()) as Array<{
+        slug: string;
+        title: string;
+        description: string | null;
+        filename: string;
+      }>;
+      if (!demos.length) {
+        target.innerHTML =
+          '<p class="empty-note">No demos up yet — check back soon.</p>';
+        return;
+      }
+      const first = demos.slice(0, 4);
+      target.innerHTML = `<div class="demo-list">${first
+        .map(
+          (d) => `
+          <a class="demo-item" href="/demos/#${d.slug}" style="text-decoration:none">
+            <span class="play-dot">▶</span>
+            <span class="info">
+              <h3>${d.title}</h3>
+              <p>${d.description ?? "Home demo"}</p>
+            </span>
+          </a>`,
+        )
+        .join("")}</div>`;
+    } catch {
+      target.innerHTML =
+        '<p class="empty-note">Demos are taking a nap right now. Try again later.</p>';
+    }
+  }
+  loadHomeDemos();
+</script>

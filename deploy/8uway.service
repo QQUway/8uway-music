@@ -1,0 +1,31 @@
+[Unit]
+Description=8Uway music portfolio (Axum static + API)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+# Adjust paths to where you cloned the repo on the server.
+WorkingDirectory=/srv/8uway
+Environment=MUSIC_PORT=8080
+Environment=MUSIC_DATA_DIR=/srv/8uway/data
+Environment=MUSIC_FRONTEND_DIR=/srv/8uway/frontend/dist
+Environment=MUSIC_ADMIN_USER=admin
+# REQUIRED: output of `cargo run --bin pwhash -- 'your-password'`
+Environment=MUSIC_ADMIN_PASSWORD_HASH=CHANGE_ME_ARGON2_HASH
+Environment=MUSIC_COOKIE_SECURE=true
+ExecStart=/srv/8uway/server/target/release/server
+Restart=on-failure
+RestartSec=3
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/srv/8uway/data
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

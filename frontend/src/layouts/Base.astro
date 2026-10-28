@@ -1,0 +1,76 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title?: string;
+  description?: string;
+  active?: string;
+}
+
+const {
+  title = "8Uway — Music",
+  description = "Songs, covers and demos by 8Uway (Rifqi Habib Ur Rahman).",
+  active = "",
+} = Astro.props;
+
+const links = [
+  { href: "/", label: "Home", id: "home" },
+  { href: "/covers/", label: "Covers", id: "covers" },
+  { href: "/demos/", label: "Demos", id: "demos" },
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <title>{title}</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <header class="site-nav">
+      <div class="container inner">
+        <a class="brand" href="/">8U<span>way</span></a>
+        <nav>
+          <ul class="nav-links">
+            {
+              links.map((l) => (
+                <li>
+                  <a href={l.href} aria-current={active === l.id ? "page" : undefined}>
+                    {l.label}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer class="site-footer">
+      <div class="container inner">
+        <p>© {new Date().getFullYear()} Rifqi Habib Ur Rahman · 8Uway</p>
+        <ul class="footer-links">
+          <li><a href="https://www.youtube.com/watch?v=eDYuTYmsGK4" target="_blank" rel="noopener">YouTube</a></li>
+          <li><a href="https://www.tiktok.com/@kiki.arloji" target="_blank" rel="noopener">TikTok</a></li>
+          <li><a href="https://www.instagram.com/nrthanger/" target="_blank" rel="noopener">Northanger</a></li>
+          <li><a href="/admin/">Admin</a></li>
+        </ul>
+      </div>
+    </footer>
+  </body>
+</html>

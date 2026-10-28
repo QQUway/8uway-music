@@ -1,0 +1,236 @@
+---
+import Base from "../layouts/Base.astro";
+---
+
+<Base active="admin" title="Admin — 8Uway" description="Manage demos.">
+  <section class="hero" style="padding-bottom: 1.5rem;">
+    <div class="container">
+      <span class="eyebrow">Backstage</span>
+      <h1 style="font-size: clamp(2rem, 4.5vw, 3rem); margin-bottom: 0.5rem;">
+        Demo management
+      </h1>
+      <p class="lede" id="whoami-note">Log in to upload and manage demo tapes.</p>
+    </div>
+  </section>
+
+  <!-- login -->
+  <section class="section" id="login-section" style="padding-top: 0.5rem;">
+    <div class="container" style="max-width: 430px;">
+      <form class="card" id="login-form">
+        <h2 style="margin-bottom: 1.2rem;">Log in</h2>
+        <div class="field">
+          <label for="login-user">Username</label>
+          <input id="login-user" name="username" autocomplete="username" required />
+        </div>
+        <div class="field">
+          <label for="login-pass">Password</label>
+          <input id="login-pass" name="password" type="password" autocomplete="current-password" required />
+        </div>
+        <p class="form-error" id="login-error"></p>
+        <button class="btn btn-primary" type="submit" style="width: 100%;">Log in</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- manage -->
+  <section class="section" id="admin-section" style="padding-top: 0.5rem; display: none;">
+    <div class="container admin-layout">
+      <form class="card" id="upload-form">
+        <h2 style="margin-bottom: 1.2rem;">Upload a demo</h2>
+        <div class="field">
+          <label for="up-title">Title</label>
+          <input id="up-title" required maxlength="120" placeholder="e.g. limbo — first take" />
+        </div>
+        <div class="field">
+          <label for="up-desc">Description (optional)</label>
+          <textarea id="up-desc" maxlength="300" placeholder="One line about the take…"></textarea>
+        </div>
+        <div class="field">
+          <label for="up-file">Audio file (mp3 / ogg / flac / wav, max 50 MB)</label>
+          <input id="up-file" type="file" accept=".mp3,.ogg,.flac,.wav,audio/mpeg,audio/ogg,audio/flac,audio/wav,audio/x-wav" required />
+        </div>
+        <div class="field" style="flex-direction: row; align-items: center; gap: 0.6rem;">
+          <input id="up-published" type="checkbox" checked style="width: 18px; height: 18px;" />
+          <label for="up-published" style="margin: 0;">Publish immediately</label>
+        </div>
+        <p class="form-error" id="upload-error"></p>
+        <button class="btn btn-primary" type="submit" id="upload-btn">Upload</button>
+        <span id="upload-progress" style="margin-left: 0.8rem; font-size: 0.88rem; color: var(--ink-soft);"></span>
+      </form>
+
+      <div class="card">
+        <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 0.6rem;">
+          <h2>All demos</h2>
+          <button class="btn btn-danger btn-sm" id="logout-btn">Log out</button>
+        </div>
+        <div id="admin-list"><p class="empty-note">Loading…</p></div>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<script>
+  const $ = (id: string) => document.getElementById(id)!;
+
+  const loginSection = $("login-section");
+  const adminSection = $("admin-section");
+  const whoamiNote = $("whoami-note");
+
+  interface Demo {
+    id: number;
+    slug: string;
+    title: string;
+    description: string | null;
+    filename: string;
+    mime: string;
+    size_bytes: number;
+    duration: number | null;
+    published: boolean;
+    created_at: string;
+  }
+
+  const mb = (b: number) => `${(b / 1024 / 1024).toFixed(1)} MB`;
+
+  async function checkAuth() {
+    try {
+      const res = await fetch("/api/auth/me");
+      if (res.ok) {
+        const data = await res.json();
+        whoamiNote.textContent = `Logged in as ${data.user}.`;
+        loginSection.style.display = "none";
+        adminSection.style.display = "";
+        loadAdminList();
+        return;
+      }
+    } catch {
+      /* fall through to login */
+    }
+    loginSection.style.display = "";
+    adminSection.style.display = "none";
+  }
+
+  $("login-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const err = $("login-error");
+    err.textContent = "";
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({
+        username: ($("login-user") as HTMLInputElement).value,
+        password: ($("login-pass") as HTMLInputElement).value,
+      }),
+    });
+    if (res.ok) {
+      checkAuth();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      err.textContent = data.error ?? "Login failed.";
+    }
+  });
+
+  $("logout-btn").addEventListener("click", async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    location.reload();
+  });
+
+  async function loadAdminList() {
+    const target = $("admin-list");
+    try {
+      const res = await fetch("/api/demos/all");
+      if (res.status === 401) {
+        loginSection.style.display = "";
+        adminSection.style.display = "none";
+        return;
+      }
+      if (!res.ok) throw new Error();
+      const demos: Demo[] = await res.json();
+      if (!demos.length) {
+        target.innerHTML = '<p class="empty-note">No demos yet.</p>';
+        return;
+      }
+      target.innerHTML = demos
+        .map(
+          (d) => `
+          <div class="admin-row" data-id="${d.id}">
+            <span class="grow">
+              <h4>${d.title}</h4>
+              <small>${mb(d.size_bytes)} · ${new Date(d.created_at).toLocaleDateString()} · /demos/#${d.slug}</small>
+            </span>
+            <span class="badge ${d.published ? "badge-live" : "badge-draft"}">${d.published ? "live" : "draft"}</span>
+            <button class="btn btn-ghost btn-sm" data-act="toggle">${d.published ? "Unpublish" : "Publish"}</button>
+            <button class="btn btn-danger btn-sm" data-act="delete">Delete</button>
+          </div>`,
+        )
+        .join("");
+
+      target.querySelectorAll<HTMLButtonElement>("button[data-act]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const row = btn.closest(".admin-row")!;
+          const id = row.getAttribute("data-id")!;
+          const act = btn.getAttribute("data-act");
+          btn.disabled = true;
+          const res = await fetch(`/api/demos/${id}`, { method: act === "delete" ? "DELETE" : "PATCH" });
+          if (res.ok) loadAdminList();
+          else {
+            btn.disabled = false;
+            alert((await res.json().catch(() => ({}))).error ?? "Action failed.");
+          }
+        });
+      });
+    } catch {
+      target.innerHTML = '<p class="empty-note">Could not load demos.</p>';
+    }
+  }
+
+  $("upload-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const err = $("upload-error");
+    const progress = $("upload-progress");
+    const btn = $("upload-btn") as HTMLButtonElement;
+    err.textContent = "";
+    progress.textContent = "";
+
+    const fileInput = $("up-file") as HTMLInputElement;
+    const file = fileInput.files?.[0];
+    if (!file) return;
+    if (file.size > 50 * 1024 * 1024) {
+      err.textContent = "File is over 50 MB.";
+      return;
+    }
+
+    const fd = new FormData();
+    fd.append("title", ($("up-title") as HTMLInputElement).value);
+    fd.append("description", ($("up-desc") as HTMLTextAreaElement).value);
+    fd.append("published", ($("up-published") as HTMLInputElement).checked ? "true" : "false");
+    fd.append("file", file);
+
+    btn.disabled = true;
+    btn.textContent = "Uploading…";
+    try {
+      const res = await fetch("/api/demos", {
+        method: "POST",
+        body: fd,
+        credentials: "same-origin",
+      });
+      if (res.ok) {
+        progress.textContent = "Uploaded ✓";
+        ($("up-title") as HTMLInputElement).value = "";
+        ($("up-desc") as HTMLTextAreaElement).value = "";
+        fileInput.value = "";
+        loadAdminList();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        err.textContent = data.error ?? `Upload failed (${res.status}).`;
+      }
+    } catch {
+      err.textContent = "Upload failed — network error.";
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Upload";
+    }
+  });
+
+  checkAuth();
+</script>

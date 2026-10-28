@@ -1,0 +1,72 @@
+---
+import Base from "../layouts/Base.astro";
+
+// TikTok official player embeds (via oEmbed player/v1). Add new covers here.
+const covers = [
+  "7693608437308984594",
+  "7688747751244336404",
+  "7661250866275486996",
+  "7652703600711388436",
+  "7661299315888999701",
+  "7672400904951319829",
+];
+---
+
+<Base
+  active="covers"
+  title="Covers — 8Uway"
+  description="Cover songs and live moments by 8Uway on TikTok."
+>
+  <section class="hero" style="padding-bottom: 1.5rem;">
+    <div class="container">
+      <span class="eyebrow">Covers</span>
+      <h1 style="font-size: clamp(2.2rem, 5vw, 3.4rem); margin-bottom: 0.8rem;">
+        Songs I borrowed.
+      </h1>
+      <p class="lede">
+        Covers, live rooms and stage moments — posted over on TikTok as
+        <a href="https://www.tiktok.com/@kiki.arloji" target="_blank" rel="noopener"><strong>@kiki.arloji</strong></a>.
+      </p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="https://www.tiktok.com/@kiki.arloji" target="_blank" rel="noopener">
+          Watch on TikTok
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="photo-strip">
+        <img src="/images/hero.webp" alt="Playing Telecaster in a café" loading="lazy" />
+        <img src="/images/live-2.jpeg" alt="Magenta stage light" loading="lazy" />
+        <img src="/images/live-band.jpeg" alt="Band on stage" loading="lazy" />
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <h2 style="margin-bottom: 0.6rem;">Some covers</h2>
+      <p style="color: var(--ink-soft); max-width: 52ch; margin-bottom: 1.5rem;">
+        A handful of favourites — the rest live on my TikTok.
+      </p>
+      <div class="tiktok-grid">
+        {covers.map((id) => (
+          <div class="tiktok-card">
+            <iframe
+              src={`https://www.tiktok.com/player/v1/${id}?music_info=1&description=1&rel=0&autoplay=0`}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; picture-in-picture; web-share"
+              allowfullscreen
+              loading="lazy"
+              title="TikTok cover by 8Uway"
+            ></iframe>
+          </div>
+        ))}
+      </div>
+      <div style="text-align: center; margin-top: 1.8rem;">
+        <a class="btn btn-ghost" href="https://www.tiktok.com/@kiki.arloji" target="_blank" rel="noopener">More on TikTok →</a>
+      </div>
+    </div>
+  </section>
+</Base>
